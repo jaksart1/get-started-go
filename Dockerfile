@@ -1,6 +1,8 @@
 FROM golang:latest
 WORKDIR /go/src/app
 COPY main.go /go/src/app
+COPY go.mod /go/src/app
+COPY go.sum /go/src/app
 COPY vendor /go/src/app/vendor
 COPY static /go/src/app/static
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -8,9 +9,8 @@ import (
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/timjacobi/go-couchdb"
 )
-
-import "github.com/timjacobi/go-couchdb"
 
 type Visitor struct {
 	Name string `json:"name"`
@@ -44,6 +44,38 @@ func main() {
 		cloudantService, _ := appEnv.Services.WithLabel("cloudantNoSQLDB")
 		if len(cloudantService) > 0 {
 			cloudantUrl = cloudantService[0].Credentials["url"].(string)
+		}
+	}
+
+	services := os.Getenv("CE_SERVICES")
+	if services != "" {
+		log.Printf("CE_SERVICES found: %s\n", services)
+
+		var ceServices map[string][]struct {
+			Credentials struct {
+				URL string
+			}
+		}
+
+		if err := json.Unmarshal([]byte(services), &ceServices); err != nil {
+			log.Printf("ERROR unmarshalling CE_SERVICES: %s", err.Error())
+		} else {
+			log.Printf("ceServices: %+v", ceServices)
+
+			if service, ok := ceServices["cloudantnosqldb"]; ok {
+				log.Printf("cloudantnosqldb found: %+v", service)
+
+				if len(service) > 0 {
+					log.Printf("Array entry length : %d", len(service))
+
+					credentials := service[0].Credentials
+					if credentials.URL != "" {
+						cloudantUrl = credentials.URL
+
+						log.Printf("URL found: %s", cloudantUrl)
+					}
+				}
+			}
 		}
 	}
 
